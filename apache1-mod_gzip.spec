@@ -8,6 +8,7 @@ Release:	2
 License:	Apache
 Group:		Networking/Daemons
 Source0:	http://dl.sourceforge.net/mod-gzip/mod_gzip-%{version}.tgz
+# Source0-md5:	080ccc5d789ed5efa0c0a7625e4fa02d
 Source1:	mod_%{mod_name}.logrotate
 Patch0:		mod_%{mod_name}-name_clash.patch
 URL:		http://sourceforge.net/projects/mod-gzip/
