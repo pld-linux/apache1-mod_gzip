@@ -1,0 +1,582 @@
+fixes CAN-2003-0842, CAN-2003-0843, CAN-2003-0844
+taken from SuSE apache-contrib package updates
+
+diff -purEbB mod_gzip-1.3.26.1a/mod_gzip.c mod_gzip-1.3.26.1a.fix/mod_gzip.c
+--- mod_gzip-1.3.26.1a/mod_gzip.c	2002-10-01 09:29:49.000000000 +0200
++++ mod_gzip-1.3.26.1a.fix/mod_gzip.c	2004-01-13 17:16:05.000000000 +0100
+@@ -93,6 +93,10 @@
+ 
+ #define CORE_PRIVATE
+ 
++#include <sys/types.h>
++#include <sys/stat.h>
++#include <fcntl.h>
++
+ #include "httpd.h"
+ #include "http_config.h"
+ #include "http_core.h"
+@@ -1382,8 +1386,8 @@ int   targetmaxlen
+        slash[1]=0;
+       }
+ 
+-    sprintf(
+-    target,
++    snprintf(
++    target, targetmaxlen,
+     "%s%s_%ld_%ld_%ld.wrk",
+     prefix,              
+     slash,               
+@@ -1394,8 +1398,8 @@ int   targetmaxlen
+    }
+  else 
+    {
+-    sprintf(
+-    target,
++    snprintf(
++    target, targetmaxlen,
+     "_%ld_%ld_%ld.wrk",
+     (long) process_id,   
+     (long) thread_id,    
+@@ -3631,7 +3635,7 @@ mod_gzip_set_temp_dir( cmd_parms *parms,
+           if ( ( *(mgc->temp_dir+(arglen-1)) != '\\' ) &&
+                ( *(mgc->temp_dir+(arglen-1)) != '/'  ) )
+             {
+-             mod_gzip_strcat( mgc->temp_dir, dirsep );
++             strcat( mgc->temp_dir, dirsep );
+             }
+ 
+           rc = stat( mgc->temp_dir, &sbuf );
+@@ -3734,7 +3738,8 @@ static const char *mod_gzip_static_suffi
+       return "mod_gzip_static_suffix: suffix to long!";
+     }
+ 
+-    mod_gzip_strcpy(mgc->suffix,arg1);
++    strncpy(mgc->suffix,arg1,sizeof(mgc->suffix)-1);
++    mgc->suffix[sizeof(mgc->suffix)-1] = '\0';
+     mgc->suffix_set = 1;
+     return NULL;
+   }
+@@ -5221,8 +5226,9 @@ mod_gzip_conf *dconf,
+ char          *input_filename
+ )
+ {
+- FILE *ifh=0;
+- FILE *ofh=0;
++ FILE *ifh=NULL;
++ FILE *ofh=NULL;
++ int   ofd=-1;
+  int   ofh_used=0;
+ 
+  int   i=0;
+@@ -5763,7 +5769,7 @@ char          *input_filename
+     send_as_is++;
+ 
+     #ifdef MOD_GZIP_USES_APACHE_LOGS
+-    mod_gzip_strcat( lbuf, ":NO_200");
++    strcat( lbuf, ":NO_200");
+     #endif
+    }
+ 
+@@ -5778,7 +5784,7 @@ char          *input_filename
+     send_as_is++;
+ 
+     #ifdef MOD_GZIP_USES_APACHE_LOGS
+-    mod_gzip_strcat( lbuf, ":RESPONSE_FIELD_EXCLUDED");
++    strcat( lbuf, ":RESPONSE_FIELD_EXCLUDED");
+     #endif
+    }
+ 
+@@ -5793,7 +5799,7 @@ char          *input_filename
+     send_as_is++;
+ 
+     #ifdef MOD_GZIP_USES_APACHE_LOGS
+-    mod_gzip_strcat( lbuf, ":NO_BODY");
++    strcat( lbuf, ":NO_BODY");
+     #endif
+    }
+ 
+@@ -5807,7 +5813,7 @@ char          *input_filename
+     send_as_is++;
+ 
+     #ifdef MOD_GZIP_USES_APACHE_LOGS
+-    mod_gzip_strcat( lbuf, ":UNKNOWN_TE_VALUE");
++    strcat( lbuf, ":UNKNOWN_TE_VALUE");
+     #endif
+    }
+ 
+@@ -5821,7 +5827,7 @@ char          *input_filename
+     send_as_is++;
+ 
+     #ifdef MOD_GZIP_USES_APACHE_LOGS
+-    mod_gzip_strcat( lbuf, ":HAS_CE");
++    strcat( lbuf, ":HAS_CE");
+     #endif
+    }
+ 
+@@ -5835,7 +5841,7 @@ char          *input_filename
+     send_as_is++;
+ 
+     #ifdef MOD_GZIP_USES_APACHE_LOGS
+-    mod_gzip_strcat( lbuf, ":NO_CONTENT_TYPE_IN_RESPONSE_HEADER");
++    strcat( lbuf, ":NO_CONTENT_TYPE_IN_RESPONSE_HEADER");
+     #endif
+    }
+  else if ( !send_as_is ) 
+@@ -5891,7 +5897,7 @@ char          *input_filename
+           send_as_is++;
+ 
+           #ifdef MOD_GZIP_USES_APACHE_LOGS
+-          mod_gzip_strcat( lbuf, ":RESPONSE_CONTENT_TYPE_EXCLUDED");
++          strcat( lbuf, ":RESPONSE_CONTENT_TYPE_EXCLUDED");
+           #endif
+          }
+       }
+@@ -6041,7 +6047,11 @@ char          *input_filename
+  mod_gzip_printf( "%s: Call OUTPUT fopen(%s)...",cn,npp(output_filename1));
+  #endif
+ 
+- ofh = fopen( output_filename1, "wb" );
++ if( (ofd  = open(output_filename1, O_WRONLY | O_CREAT | O_EXCL)) < 0 || (ofh = fdopen(ofd ,"w")) == NULL)
++ {
++   ofd = -1;
++   ofh = NULL;
++ }
+ 
+  if ( !ofh ) 
+    {
+@@ -6875,7 +6885,7 @@ long         content_length
+                mod_gzip_printf( "%s: HEADER: ADDING: lbuf=[%s]",cn,npp(lbuf));
+                #endif
+ 
+-               mod_gzip_strcat( lbuf, "\r\n" );
++               strcat( lbuf, "\r\n" );
+ 
+                if ( send_header )
+                  {
+@@ -6888,7 +6898,7 @@ long         content_length
+                mod_gzip_printf( "%s: HEADER: ADDING: lbuf=[%s]",cn,npp(lbuf));
+                #endif
+ 
+-               mod_gzip_strcat( lbuf, "\r\n" );
++               strcat( lbuf, "\r\n" );
+ 
+                if ( send_header )
+                  {
+@@ -7283,12 +7293,12 @@ char          *result_prefix_string
+     prefix_string = dummy_result_prefix_string;
+    }
+ 
+- sprintf( log_info,"%sOK", prefix_string );
++ snprintf( log_info, sizeof(log_info),"%sOK", prefix_string );
+ 
+  ap_table_setn(
+  r->notes,"mod_gzip_result",ap_pstrdup(r->pool,log_info));
+ 
+- sprintf( log_info,"%d", (int) input_size );
++ snprintf( log_info, sizeof(log_info),"%d", (int) input_size );
+  ap_table_setn( r->notes,"mod_gzip_input_size",ap_pstrdup(r->pool,log_info));
+ 
+  #endif
+@@ -7302,7 +7312,7 @@ char          *result_prefix_string
+ 
+     #ifdef MOD_GZIP_USES_APACHE_LOGS
+ 
+-    sprintf( log_info,"%sDECLINED:NO_ILEN", prefix_string );
++    snprintf( log_info, sizeof(log_info),"%sDECLINED:NO_ILEN", prefix_string );
+ 
+     ap_table_setn(
+     r->notes,"mod_gzip_result",ap_pstrdup(r->pool,log_info));
+@@ -7329,7 +7339,7 @@ char          *result_prefix_string
+ 
+     #ifdef MOD_GZIP_USES_APACHE_LOGS
+ 
+-    sprintf( log_info,"%sDECLINED:TOO_SMALL", prefix_string );
++    snprintf( log_info, sizeof(log_info),"%sDECLINED:TOO_SMALL", prefix_string );
+ 
+     ap_table_setn(
+     r->notes,"mod_gzip_result",ap_pstrdup(r->pool,log_info));
+@@ -7364,7 +7374,7 @@ char          *result_prefix_string
+ 
+     #ifdef MOD_GZIP_USES_APACHE_LOGS
+ 
+-    sprintf( log_info,"%sDECLINED:TOO_BIG", prefix_string );
++    snprintf( log_info, sizeof(log_info),"%sDECLINED:TOO_BIG", prefix_string );
+ 
+     ap_table_setn(
+     r->notes,"mod_gzip_result",ap_pstrdup(r->pool,log_info));
+@@ -7396,7 +7406,8 @@ char          *result_prefix_string
+     mod_gzip_printf( "%s: Input source is file[%s]",cn,npp(source));
+     #endif
+ 
+-    mod_gzip_strcpy( gzp->input_filename, source );
++    strncpy( gzp->input_filename, source, sizeof(gzp->input_filename)-1 );
++    gzp->input_filename[sizeof(gzp->input_filename)-1] = '\0';
+ 
+     gzp->input_ismem         = 0;
+     gzp->input_ismem_ibuf    = 0;
+@@ -7537,10 +7548,10 @@ char          *result_prefix_string
+ 
+  #ifdef MOD_GZIP_USES_APACHE_LOGS
+ 
+- sprintf( log_info,"%d", (int) output_size );
++ snprintf( log_info, sizeof(log_info), "%d", (int) output_size );
+  ap_table_setn( r->notes,"mod_gzip_output_size",ap_pstrdup(r->pool,log_info));
+ 
+- sprintf( log_info,"%d", (int) compression_ratio );
++ snprintf( log_info, sizeof(log_info),"%d", (int) compression_ratio );
+  ap_table_setn( r->notes,"mod_gzip_compression_ratio",ap_pstrdup(r->pool,log_info));
+ 
+  #endif
+@@ -7556,7 +7567,7 @@ char          *result_prefix_string
+ 
+     #ifdef MOD_GZIP_USES_APACHE_LOGS
+ 
+-    sprintf( log_info,"%sDECLINED:NO_OLEN", prefix_string );
++    snprintf( log_info, sizeof(log_info),"%sDECLINED:NO_OLEN", prefix_string );
+ 
+     ap_table_setn(
+     r->notes,"mod_gzip_result",ap_pstrdup(r->pool,log_info));
+@@ -7637,7 +7648,7 @@ char          *result_prefix_string
+ 
+     #ifdef MOD_GZIP_USES_APACHE_LOGS
+ 
+-    sprintf( log_info,"%sDECLINED:ORIGINAL_SMALLER", prefix_string );
++    snprintf( log_info, sizeof(log_info),"%sDECLINED:ORIGINAL_SMALLER", prefix_string );
+ 
+     ap_table_setn(
+     r->notes,"mod_gzip_result",ap_pstrdup(r->pool,log_info));
+@@ -7701,7 +7712,7 @@ char          *result_prefix_string
+ 
+        #ifdef MOD_GZIP_USES_APACHE_LOGS
+ 
+-       sprintf( log_info,"%sDECLINED:REOPEN_FAILED", prefix_string );
++       snprintf( log_info, sizeof(log_info),"%sDECLINED:REOPEN_FAILED", prefix_string );
+ 
+        ap_table_setn(
+        r->notes,"mod_gzip_result",ap_pstrdup(r->pool,log_info));
+@@ -7817,9 +7828,9 @@ char          *result_prefix_string
+ 
+        #ifdef MOD_GZIP_DEBUG1
+        mod_gzip_translate_comerror( err, scratch2 );
+-       sprintf( log_info,"%sTRANSMIT_ERROR:ISMEM:%d:%s", prefix_string, (int) err, scratch2 );
++       snprintf( log_info, sizeof(log_info),"%sTRANSMIT_ERROR:ISMEM:%d:%s", prefix_string, (int) err, scratch2 );
+        #else
+-       sprintf( log_info,"%sTRANSMIT_ERROR:ISMEM:%d", prefix_string, (int) err );
++       snprintf( log_info, sizeof(log_info),"%sTRANSMIT_ERROR:ISMEM:%d", prefix_string, (int) err );
+        #endif
+ 
+        ap_table_setn( r->notes,"mod_gzip_result",ap_pstrdup(r->pool,log_info));
+@@ -7911,9 +7922,9 @@ char          *result_prefix_string
+ 
+            #ifdef MOD_GZIP_DEBUG1
+            mod_gzip_translate_comerror( err, scratch2 );
+-           sprintf( log_info,"%sTRANSMIT_ERROR:%d:%s", prefix_string, (int) err, scratch2 );
++           snprintf( log_info, sizeof(log_info),"%sTRANSMIT_ERROR:%d:%s", prefix_string, (int) err, scratch2 );
+            #else
+-           sprintf( log_info,"%sTRANSMIT_ERROR:%d", prefix_string, (int) err );
++           snprintf( log_info, sizeof(log_info),"%sTRANSMIT_ERROR:%d", prefix_string, (int) err );
+            #endif
+ 
+            ap_table_setn( r->notes,"mod_gzip_result",ap_pstrdup(r->pool,log_info));
+@@ -8036,10 +8047,10 @@ char          *result_prefix_string
+ 
+  if ( finalize_stats )
+    {
+-    sprintf( log_info,"%d", (int) output_size );
++    snprintf( log_info, sizeof(log_info),"%d", (int) output_size );
+     ap_table_setn( r->notes,"mod_gzip_output_size",ap_pstrdup(r->pool,log_info));
+ 
+-    sprintf( log_info,"%d", (int) compression_ratio );
++    snprintf( log_info, sizeof(log_info),"%d", (int) compression_ratio );
+     ap_table_setn( r->notes,"mod_gzip_compression_ratio",ap_pstrdup(r->pool,log_info));
+    }
+ 
+@@ -8072,7 +8083,7 @@ char *mod_gzip_generate_vary_header(mod_
+ 
+   for(i=0;i<cfg->imap_total_entries;i++) {
+     if(cfg->imap[i].type == MOD_GZIP_IMAP_ISREQHEADER) {
+-      mod_gzip_strncpy(name,cfg->imap[i].name,strstr(cfg->imap[i].name,":") - cfg->imap[i].name - 1);
++      strncpy(name,cfg->imap[i].name,strstr(cfg->imap[i].name,":") - cfg->imap[i].name - 1);
+       *((const char **)ap_push_array(ary)) = ap_pstrdup(p,name);
+     }
+   }
+@@ -8097,8 +8108,10 @@ int mod_gzip_compress_file(request_rec *
+   gzc.result_code          = 0;
+   gzc.bytes_out            = 0;
+ 
+-  mod_gzip_strcpy(gzc.input_filename, r->filename);
+-  mod_gzip_strcpy(gzc.output_filename,dest);
++  strncpy(gzc.input_filename, r->filename, sizeof(gzc.input_filename)-1);
++  gzc.input_filename[sizeof(gzc.input_filename)-1] = '\0';
++  strncpy(gzc.output_filename,dest, sizeof(gzc.output_filename)-1);
++  gzc.output_filename[sizeof(gzc.output_filename)-1] = '\0';
+ 
+   rc = gzp_main(r,&gzc);
+ 
+diff -purEbB mod_gzip-1.3.26.1a/mod_gzip_debug.c mod_gzip-1.3.26.1a.fix/mod_gzip_debug.c
+--- mod_gzip-1.3.26.1a/mod_gzip_debug.c	2002-10-01 09:29:49.000000000 +0200
++++ mod_gzip-1.3.26.1a.fix/mod_gzip_debug.c	2004-01-15 15:26:20.000000000 +0100
+@@ -98,6 +98,17 @@
+ #include "mod_gzip.h"
+ #include "mod_gzip_debug.h"
+ 
++#ifndef WIN32
++	#include <sys/types.h>
++	#include <sys/stat.h>
++	#define __USE_GNU
++	#include <fcntl.h>
++	#ifndef O_NOFOLLOW
++		# warning System does not know O_NOFOLLOW
++		#define O_NOFOLLOW 0400000
++	#endif
++#endif
++
+ #ifdef MOD_GZIP_DEBUG1
+ 
+ server_rec *mod_gzip_server_now = 0;
+@@ -125,7 +137,7 @@ void mod_gzip_printf( const char *fmt, .
+ 
+  va_start( ap, fmt );
+ 
+- l = vsprintf( log_line, fmt, ap );
++ l = vsnprintf( log_line, sizeof(log_line), fmt, ap );
+ 
+  va_end(ap);
+ 
+@@ -136,11 +148,39 @@ void mod_gzip_printf( const char *fmt, .
+ 
+ #else 
+ 
++int safe_reopen (char *file, int mode)
++{
++	struct stat st;
++	struct stat st2;
++	int fd;
++
++	if (lstat(file, &st) < 0)
++	{ // does not exit -> safe creation
++		if ((fd = open(file, mode | O_EXCL | O_CREAT, 0600)) < 0)
++			return(-1);
++	}
++	else
++	{ // it exists - allow only regular file which are not hardlinked
++		if ((! S_ISREG(st.st_mode)) || st.st_nlink != 1)
++			return(-1); // OK, lets open
++		if ((fd = open(file, mode | O_NOFOLLOW)) < 0)
++			return(-1);
++		fstat(fd, &st2); // recheck that it's the same file ...
++		if (st2.st_dev != st.st_dev || st2.st_ino != st.st_ino || st2.st_uid != st.st_uid || st2.st_nlink != 1)
++		{
++			close(fd);
++			return(-1);
++		}
++	}
++
++	return(fd);
++}
++	
+ void mod_gzip_printf( const char *fmt, ... )
+ {
+- int   l;
++ int   l, fd;
+  char *p1;
+- FILE *log;
++ FILE *mod_gzip_log_handle;
+ 
+  va_list ap;
+ 
+@@ -153,31 +193,28 @@ void mod_gzip_printf( const char *fmt, .
+  long pid = (long) getpid();
+  #endif
+ 
++ memset(log_line, 0, sizeof(log_line));
++ 
+  #ifdef WIN32
+  sprintf( logname, "c:\\temp\\t%ld.log",(long)pid);
+  #else
+- sprintf( logname, "/tmp/t%ld.log",(long)pid);
++ sprintf( logname, "/tmp/t%ld.log", (long)pid);
+  #endif
+ 
+- log = fopen( logname,"a" );
+-
+- if ( !log ) 
+-   {
+-    return; 
+-   }
++ fd = safe_reopen(logname, O_APPEND);
++ mod_gzip_log_handle = fdopen(fd, "a");
+ 
+  va_start( ap, fmt );
+ 
+- l = vsprintf(log_line, fmt, ap);
++ l = vsnprintf(log_line, sizeof(log_line), fmt, ap);
+ 
+  p1=log_line;
+  while((*p1!=0)&&(*p1!=13)&&(*p1!=10)) p1++;
+  *p1=0;
+ 
+- fprintf( log, "%s\n", log_line );
+-
+- fclose( log );
++ fprintf( mod_gzip_log_handle, "%s\n", log_line );
+ 
++ fclose( mod_gzip_log_handle );
+  va_end(ap); 
+ 
+  return; 
+@@ -305,103 +342,103 @@ int mod_gzip_log_comerror( request_rec *
+ 
+  if ( error == WSANOTINITIALISED )
+    {
+-    sprintf(b[0],"%s * WSANOTINITIALISED",p);
+-    sprintf(b[1],"%s * A successful WSAStartup() must occur",p);
+-    sprintf(b[2],"%s * before using this WINSOCK API call.",p);
++    snprintf(b[0],sizeof(b[0]),"%s * WSANOTINITIALISED",p);
++    snprintf(b[1],sizeof(b[1]),"%s * A successful WSAStartup() must occur",p);
++    snprintf(b[2],sizeof(b[2]),"%s * before using this WINSOCK API call.",p);
+    }
+  else if ( error == WSAENETDOWN )
+    {
+-    sprintf(b[0],"%s * WSAENETDOWN",p);
+-    sprintf(b[1],"%s * The Windows Sockets implementation has detected",p);
+-    sprintf(b[2],"%s * that the network subsystem has failed.",p);
++    snprintf(b[0],sizeof(b[0]),"%s * WSAENETDOWN",p);
++    snprintf(b[1],sizeof(b[1]),"%s * The Windows Sockets implementation has detected",p);
++    snprintf(b[2],sizeof(b[2]),"%s * that the network subsystem has failed.",p);
+    }
+  else if ( error == WSAENOTCONN )
+    {
+-    sprintf(b[0],"%s * WSAENOTCONN",p);
+-    sprintf(b[1],"%s * The socket is not connected.",p);
++    snprintf(b[0],sizeof(b[0]),"%s * WSAENOTCONN",p);
++    snprintf(b[1],sizeof(b[1]),"%s * The socket is not connected.",p);
+    }
+  else if ( error == WSAEINTR )
+    {
+-    sprintf(b[0],"%s * WSAEINTR",p);
+-    sprintf(b[1],"%s * The (blocking) call was cancelled",p);
+-    sprintf(b[2],"%s * via WSACancelBlockingCall()",p);
++    snprintf(b[0],sizeof(b[0]),"%s * WSAEINTR",p);
++    snprintf(b[1],sizeof(b[1]),"%s * The (blocking) call was cancelled",p);
++    snprintf(b[2],sizeof(b[2]),"%s * via WSACancelBlockingCall()",p);
+    }
+  else if ( error == WSAEINPROGRESS )
+    {
+-    sprintf(b[0],"%s * WSAEINPROGRESS",p);
+-    sprintf(b[1],"%s * A blocking Windows Sockets operation",p);
+-    sprintf(b[2],"%s * is in progress.",p);
++    snprintf(b[0],sizeof(b[0]),"%s * WSAEINPROGRESS",p);
++    snprintf(b[1],sizeof(b[1]),"%s * A blocking Windows Sockets operation",p);
++    snprintf(b[2],sizeof(b[2]),"%s * is in progress.",p);
+    }
+  else if ( error == WSAENOTSOCK )
+    {
+-    sprintf(b[0],"%s * WSAENOTSOCK",p);
+-    sprintf(b[1],"%s * The descriptor is not a socket.",p);
++    snprintf(b[0],sizeof(b[0]),"%s * WSAENOTSOCK",p);
++    snprintf(b[1],sizeof(b[1]),"%s * The descriptor is not a socket.",p);
+    }
+  else if ( error == WSAEOPNOTSUPP )
+    {
+-    sprintf(b[0],"%s * WSAEOPNOTSUPP",p);
+-    sprintf(b[1],"%s * MSG_OOB was specified, but the socket is",p);
+-    sprintf(b[2],"%s * not of type SOCK_STREAM.",p);
++    snprintf(b[0],sizeof(b[0]),"%s * WSAEOPNOTSUPP",p);
++    snprintf(b[1],sizeof(b[1]),"%s * MSG_OOB was specified, but the socket is",p);
++    snprintf(b[2],sizeof(b[2]),"%s * not of type SOCK_STREAM.",p);
+    }
+  else if ( error == WSAESHUTDOWN )
+    {
+-    sprintf(b[0],"%s * WSAESHUTDOWN",p);
+-    sprintf(b[1],"%s * The socket has been shutdown.",p);
++    snprintf(b[0],sizeof(b[0]),"%s * WSAESHUTDOWN",p);
++    snprintf(b[1],sizeof(b[1]),"%s * The socket has been shutdown.",p);
+    }
+  else if ( error == WSAEWOULDBLOCK )
+    {
+-    sprintf(b[0],"%s * WSAEWOULDBLOCK",p);
+-    sprintf(b[1],"%s * The socket is marked as non-blocking",p);
+-    sprintf(b[2],"%s * and receive operation would block.",p);
++    snprintf(b[0],sizeof(b[0]),"%s * WSAEWOULDBLOCK",p);
++    snprintf(b[1],sizeof(b[1]),"%s * The socket is marked as non-blocking",p);
++    snprintf(b[2],sizeof(b[2]),"%s * and receive operation would block.",p);
+    }
+  else if ( error == WSAEMSGSIZE )
+    {
+-    sprintf(b[0],"%s * WSAEMSGSIZE",p);
+-    sprintf(b[1],"%s * The datagram was too large to",p);
+-    sprintf(b[2],"%s * fit into the specified buffer.",p);
++    snprintf(b[0],sizeof(b[0]),"%s * WSAEMSGSIZE",p);
++    snprintf(b[1],sizeof(b[1]),"%s * The datagram was too large to",p);
++    snprintf(b[2],sizeof(b[2]),"%s * fit into the specified buffer.",p);
+    }
+  else if ( error == WSAEINVAL )
+    {
+-    sprintf(b[0],"%s * WSAEINVAL",p);
+-    sprintf(b[1],"%s * The socket has not been bound with bind().",p);
++    snprintf(b[0],sizeof(b[0]),"%s * WSAEINVAL",p);
++    snprintf(b[1],sizeof(b[1]),"%s * The socket has not been bound with bind().",p);
+    }
+  else if ( error == WSAECONNABORTED )
+    {
+-    sprintf(b[0],"%s * WSAECONNABORTED",p);
+-    sprintf(b[1],"%s * The virtual circuit was aborted",p);
+-    sprintf(b[2],"%s * due to timeout or other failure.",p);
++    snprintf(b[0],sizeof(b[0]),"%s * WSAECONNABORTED",p);
++    snprintf(b[1],sizeof(b[1]),"%s * The virtual circuit was aborted",p);
++    snprintf(b[2],sizeof(b[2]),"%s * due to timeout or other failure.",p);
+    }
+  else if ( error == WSAECONNRESET )
+    {
+-    sprintf(b[0],"%s * WSAECONNRESET",p);
+-    sprintf(b[1],"%s * The virtual circuit was reset by the remote side.",p);
++    snprintf(b[0],sizeof(b[0]),"%s * WSAECONNRESET",p);
++    snprintf(b[1],sizeof(b[1]),"%s * The virtual circuit was reset by the remote side.",p);
+    }
+  else
+    {
+-    sprintf(b[0],"%s * WSA????",p);
+-    sprintf(b[1],"%s * Unexpected WINSOCK error code %d",p,error);
++    snprintf(b[0],sizeof(b[0]),"%s * WSA????",p);
++    snprintf(b[1],sizeof(b[1]),"%s * Unexpected WINSOCK error code %d",p,error);
+    }
+ 
+  #else 
+ 
+-      if ( error == EBADF       ) sprintf(b[0],"%s * EBADF", p );
+- else if ( error == EAGAIN      ) sprintf(b[0],"%s * EAGAIN",p );
+- else if ( error == EDQUOT      ) sprintf(b[0],"%s * EDQUOT",p );
+- else if ( error == EFAULT      ) sprintf(b[0],"%s * EFAULT",p );
+- else if ( error == EFBIG       ) sprintf(b[0],"%s * EFBIG", p );
+- else if ( error == EINTR       ) sprintf(b[0],"%s * EINTR", p );
+- else if ( error == EINVAL      ) sprintf(b[0],"%s * EINVAL",p );
+- else if ( error == EIO         ) sprintf(b[0],"%s * EIO",   p );
+- else if ( error == ENOSPC      ) sprintf(b[0],"%s * ENOSPC",p );
+- else if ( error == ENXIO       ) sprintf(b[0],"%s * ENXIO", p );
+- else if ( error == EPIPE       ) sprintf(b[0],"%s * EPIPE", p );
+- else if ( error == ERANGE      ) sprintf(b[0],"%s * ERANGE",p );
+- else if ( error == EINVAL      ) sprintf(b[0],"%s * EINVAL",p );
+- else if ( error == EWOULDBLOCK ) sprintf(b[0],"%s * EWOULDBLOCK",p );
++      if ( error == EBADF       ) snprintf(b[0],sizeof(b[0]),"%s * EBADF", p );
++ else if ( error == EAGAIN      ) snprintf(b[0],sizeof(b[0]),"%s * EAGAIN",p );
++ else if ( error == EDQUOT      ) snprintf(b[0],sizeof(b[0]),"%s * EDQUOT",p );
++ else if ( error == EFAULT      ) snprintf(b[0],sizeof(b[0]),"%s * EFAULT",p );
++ else if ( error == EFBIG       ) snprintf(b[0],sizeof(b[0]),"%s * EFBIG", p );
++ else if ( error == EINTR       ) snprintf(b[0],sizeof(b[0]),"%s * EINTR", p );
++ else if ( error == EINVAL      ) snprintf(b[0],sizeof(b[0]),"%s * EINVAL",p );
++ else if ( error == EIO         ) snprintf(b[0],sizeof(b[0]),"%s * EIO",   p );
++ else if ( error == ENOSPC      ) snprintf(b[0],sizeof(b[0]),"%s * ENOSPC",p );
++ else if ( error == ENXIO       ) snprintf(b[0],sizeof(b[0]),"%s * ENXIO", p );
++ else if ( error == EPIPE       ) snprintf(b[0],sizeof(b[0]),"%s * EPIPE", p );
++ else if ( error == ERANGE      ) snprintf(b[0],sizeof(b[0]),"%s * ERANGE",p );
++ else if ( error == EINVAL      ) snprintf(b[0],sizeof(b[0]),"%s * EINVAL",p );
++ else if ( error == EWOULDBLOCK ) snprintf(b[0],sizeof(b[0]),"%s * EWOULDBLOCK",p );
+ 
+  else 
+    {
+-    sprintf(b[0],"%s * E???? Unexpected error code %d",p,error);
++    snprintf(b[0],sizeof(b[0]),"%s * E???? Unexpected error code %d",p,error);
+    }
+ 
+  #endif 
