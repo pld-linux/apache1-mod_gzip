@@ -4,27 +4,29 @@ Summary:	Apache module: On-the-fly compression of HTML documents
 Summary(pl):	Modu³ do apache: kompresuje dokumenty HTML w locie
 Name:		apache1-mod_%{mod_name}
 Version:	1.3.26.1a
-Release:	1
+Release:	1.5
 License:	Apache
 Group:		Networking/Daemons
 Source0:	http://dl.sourceforge.net/mod-gzip/mod_gzip-%{version}.tgz
 # Source0-md5:	080ccc5d789ed5efa0c0a7625e4fa02d
-Source1:	%{name}.logrotate
+Source1:	%{name}.conf
+Source2:	%{name}.logrotate
 Patch0:		%{name}-name_clash.patch
 Patch1:		%{name}-security.patch
 URL:		http://www.schroepl.net/projekte/mod_gzip/
 BuildRequires:	%{apxs}
-BuildRequires:	apache1-devel
+BuildRequires:	apache1-devel >= 1.3.33-2
 BuildRequires:	zlib-devel
-Requires(post,preun):	%{apxs}
-Requires(post,preun):	grep
-Requires(preun):	fileutils
-Requires:	apache1
+Requires(triggerpostun):	%{apxs}
+Requires(triggerpostun):	grep
+Requires(triggerpostun):	sed >= 4.0
+Requires:	apache1 >= 1.3.33-2
 Obsoletes:	apache-mod_%{mod_name} <= %{version}
 BuildRoot:	%{tmpdir}/%{name}-%{version}-root-%(id -u -n)
 
-%define		_pkglibdir	%(%{apxs} -q LIBEXECDIR)
-%define		_sysconfdir	%(%{apxs} -q SYSCONFDIR)
+%define		_pkglibdir	%(%{apxs} -q LIBEXECDIR 2>/dev/null)
+%define		_sysconfdir	%(%{apxs} -q SYSCONFDIR 2>/dev/null)
+%define		_pkglogdir	%(%{apxs} -q PREFIX 2>/dev/null)/logs
 
 %description
 Apache module: On-the-fly compression of HTML documents. Browser will
@@ -44,35 +46,43 @@ sposób przezroczysty dekompresuj± i wy¶wietlaj± takie dokumenty.
 
 %install
 rm -rf $RPM_BUILD_ROOT
-install -d $RPM_BUILD_ROOT{%{_pkglibdir},%{_sysconfdir},/etc/logrotate.d}
+install -d $RPM_BUILD_ROOT{%{_pkglibdir},%{_sysconfdir}/conf.d,/etc/logrotate.d,%{_pkglogdir}}
 
 install mod_%{mod_name}.so $RPM_BUILD_ROOT%{_pkglibdir}
-sed -e 's#logs/mod_gzip.log#/var/log/httpd/mod_gzip.log#g' docs/mod_gzip.conf.sample > $RPM_BUILD_ROOT%{_sysconfdir}/mod_gzip.conf
+install %{SOURCE1} $RPM_BUILD_ROOT%{_sysconfdir}/conf.d/90_mod_%{mod_name}.conf
+install %{SOURCE2} $RPM_BUILD_ROOT/etc/logrotate.d/%{name}
 
-install %{SOURCE1} $RPM_BUILD_ROOT/etc/logrotate.d/%{name}
+> $RPM_BUILD_ROOT%{_pkglogdir}/mod_gzip.log
 
 %clean
 rm -rf $RPM_BUILD_ROOT
 
 %post
-%{apxs} -e -a -n %{mod_name} %{_pkglibdir}/mod_%{mod_name}.so 1>&2
-if [ -f /etc/apache/apache.conf ] && ! grep -q "^Include.*mod_%{mod_name}.conf" /etc/apache/apache.conf; then
-	echo "Include /etc/apache/mod_%{mod_name}.conf" >> /etc/apache/apache.conf
-fi
 if [ -f /var/lock/subsys/apache ]; then
 	/etc/rc.d/init.d/apache restart 1>&2
 fi
 
 %preun
 if [ "$1" = "0" ]; then
-	%{apxs} -e -A -n %{mod_name} %{_pkglibdir}/mod_%{mod_name}.so 1>&2
-	umask 027
-	grep -v "^Include.*mod_%{mod_name}.conf" /etc/apache/apache.conf > \
-		/etc/apache/apache.conf.tmp
-	mv -f /etc/apache/apache.conf.tmp /etc/apache/apache.conf
 	if [ -f /var/lock/subsys/apache ]; then
 		/etc/rc.d/init.d/apache restart 1>&2
 	fi
+fi
+
+%triggerpostun -- %{name} < 1.3.26.1a-1.1
+if grep -q '^Include conf\.d' /etc/apache/apache.conf; then
+	%{apxs} -e -A -n %{mod_name} %{_pkglibdir}/mod_%{mod_name}.so 1>&2
+	sed -i -e '
+		/^Include.*mod_%{mod_name}\.conf/d
+	' /etc/apache/apache.conf
+else
+	# they're still using old apache.conf
+	sed -i -e '
+		s,^Include.*mod_%{mod_name}\.conf,Include %{_sysconfdir}/conf.d/*_mod_%{mod_name}.conf,
+	' /etc/apache/apache.conf
+fi
+if [ -f /var/lock/subsys/apache ]; then
+	/etc/rc.d/init.d/apache restart 1>&2
 fi
 
 %files
@@ -80,5 +90,6 @@ fi
 %doc docs/manual/english/*
 %lang(de) %doc docs/manual/deutsch
 %attr(755,root,root) %{_pkglibdir}/*
-%attr(640,root,root) %config(noreplace) %verify(not size mtime md5) %{_sysconfdir}/mod_gzip.conf
+%attr(640,root,root) %config(noreplace) %verify(not size mtime md5) %{_sysconfdir}/conf.d/*_mod_%{mod_name}.conf
 %attr(640,root,root) %config(noreplace) %verify(not size mtime md5) /etc/logrotate.d/*
+%attr(640,root,root) %ghost %{_pkglogdir}/*
