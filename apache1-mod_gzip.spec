@@ -3,17 +3,12 @@
 Summary:	Apache module: On-the-fly compression of HTML documents
 Summary(pl):	Modu³ do apache: kompresuje dokumenty HTML w locie
 Name:		apache-mod_%{mod_name}
-Version:	1.3.19.1a
-Release:	4
+Version:	1.3.26.1a
+Release:	1
 License:	Apache
 Group:		Networking/Daemons
-# working URL: http://www.schroepl.net/_download/mod_gzip-1.3.19.1b.zip
-Source0:	http://www.remotecommunications.com/apache/mod_%{mod_name}/src/%{version}/mod_%{mod_name}.c
-Source1:	http://www.remotecommunications.com/apache/mod_%{mod_name}/src/%{version}/changes.txt
-Source2:	http://www.remotecommunications.com/apache/mod_%{mod_name}/src/%{version}/commands.txt
-Source3:	http://www.remotecommunications.com/apache/mod_%{mod_name}/src/%{version}/samples.txt
-Source4:	%{name}.conf
-URL:		http://www.schroepl.net/projekte/mod_gzip/
+Source0:	http://dl.sourceforge.net/mod-gzip/mod_gzip-1.3.26.1a.tgz
+URL:		http://sourceforge.net/projects/mod-gzip/
 BuildRequires:	%{apxs}
 BuildRequires:	apache(EAPI)-devel
 BuildRequires:	zlib-devel
@@ -35,21 +30,17 @@ Modu³ do apache: kompresuje dokumenty HTML w locie. Przegl±darki w
 sposób przezroczysty dekompresuj± i wy¶wietlaj± takie dokumenty.
 
 %prep
-%setup -q -T -c
-cp %{SOURCE0} .
-cp %{SOURCE1} .
-cp %{SOURCE2} .
-cp %{SOURCE3} .
+%setup -q -n mod_%{mod_name}-%{version}
 
 %build
-%{apxs} -c mod_%{mod_name}.c -o mod_%{mod_name}.so -lz
+%{apxs} -Wc,-Wall,-pipe -c mod_%{mod_name}.c mod_%{mod_name}_debug.c mod_%{mod_name}_compress.c -o mod_%{mod_name}.so
 
 %install
 rm -rf $RPM_BUILD_ROOT
 install -d $RPM_BUILD_ROOT{%{_pkglibdir},%{_sysconfdir}}
 
 install mod_%{mod_name}.so $RPM_BUILD_ROOT%{_pkglibdir}
-install %{SOURCE4} $RPM_BUILD_ROOT%{_sysconfdir}/mod_gzip.conf
+install docs/mod_gzip.conf.sample $RPM_BUILD_ROOT%{_sysconfdir}/mod_gzip.conf
 
 %clean
 rm -rf $RPM_BUILD_ROOT
@@ -77,6 +68,7 @@ fi
 
 %files
 %defattr(644,root,root,755)
-%doc *.txt
+%doc manual/english/*
+%lang(de) %doc manual/deutsch
 %attr(755,root,root) %{_pkglibdir}/*
 %attr(640,root,root) %config(noreplace) %verify(not size mtime md5) %{_sysconfdir}/mod_gzip.conf
