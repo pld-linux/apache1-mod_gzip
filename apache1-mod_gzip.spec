@@ -7,7 +7,7 @@ Version:	1.3.26.1a
 Release:	1
 License:	Apache
 Group:		Networking/Daemons
-Source0:	http://dl.sourceforge.net/mod-gzip/mod_gzip-1.3.26.1a.tgz
+Source0:	http://dl.sourceforge.net/mod-gzip/mod_gzip-%{version}.tgz
 URL:		http://sourceforge.net/projects/mod-gzip/
 BuildRequires:	%{apxs}
 BuildRequires:	apache(EAPI)-devel
