@@ -1,4 +1,5 @@
 %define		mod_name	gzip
+%define 	apxs		/usr/sbin/apxs
 Summary:	Apache module: On-the-fly compression of HTML documents
 Summary(pl):	Modu³ do apache: kompresuje dokumenty HTML w locie
 Name:		apache-mod_%{mod_name}
@@ -6,28 +7,40 @@ Version:	1.3.19.1a
 Release:	1
 License:	Apache Software License
 Group:		Networking/Daemons
+Group(cs):	Sí»ové/Démoni
+Group(da):	Netværks/Dæmoner
 Group(de):	Netzwerkwesen/Server
+Group(es):	Red/Servidores
+Group(fr):	Réseau/Serveurs
+Group(is):	Net/Púkar
+Group(it):	Rete/Demoni
+Group(no):	Nettverks/Daemoner
 Group(pl):	Sieciowe/Serwery
+Group(pt):	Rede/Servidores
+Group(ru):	óÅÔØ/äÅÍÏÎÙ
+Group(sl):	Omre¾ni/Stre¾niki
+Group(sv):	Nätverk/Demoner
+Group(uk):	íÅÒÅÖÁ/äÅÍÏÎÉ
 Source0:	http://www.remotecommunications.com/apache/mod_%{mod_name}/src/%{version}/mod_%{mod_name}.c
 Source1:	http://www.remotecommunications.com/apache/mod_%{mod_name}/src/%{version}/changes.txt
 Source2:	http://www.remotecommunications.com/apache/mod_%{mod_name}/src/%{version}/commands.txt
 Source3:	http://www.remotecommunications.com/apache/mod_%{mod_name}/src/%{version}/samples.txt
-BuildRequires:	/usr/sbin/apxs
+BuildRequires:	%{apxs}
 BuildRequires:	apache(EAPI)-devel
 BuildRequires:	zlib-devel
-Prereq:		/usr/sbin/apxs
+Prereq:		%{_sbindir}/apxs
 Requires:	apache(EAPI)
 BuildRoot:	%{tmpdir}/%{name}-%{version}-root-%(id -u -n)
 
-%define		_pkglibdir	%(/usr/sbin/apxs -q LIBEXECDIR)
+%define		_pkglibdir	%(%{apxs} -q LIBEXECDIR)
 
 %description
 Apache module: On-the-fly compression of HTML documents. Browser will
 transparently decompress and display such documents.
 
 %description -l pl
-Modu³ do apache: kompresuje dokumenty HTML w locie. Przegl±daki w sposób
-przezroczysty dekompresuj± i wy¶wietlaj± takie dokumenty.
+Modu³ do apache: kompresuje dokumenty HTML w locie. Przegl±darki w
+sposób przezroczysty dekompresuj± i wy¶wietlaj± takie dokumenty.
 
 %prep 
 %setup -q -T -c
@@ -37,7 +50,7 @@ cp %{SOURCE2} .
 cp %{SOURCE3} .
 
 %build
-/usr/sbin/apxs -c mod_%{mod_name}.c -o mod_%{mod_name}.so -lz
+%{apxs} -c mod_%{mod_name}.c -o mod_%{mod_name}.so -lz
 
 %install
 rm -rf $RPM_BUILD_ROOT
@@ -55,7 +68,7 @@ fi
 
 %preun
 if [ "$1" = "0" ]; then
-	/usr/sbin/apxs -e -A -n %{mod_name} %{_pkglibdir}/mod_%{mod_name}.so 1>&2
+	%{_sbindir}/apxs -e -A -n %{mod_name} %{_pkglibdir}/mod_%{mod_name}.so 1>&2
 	if [ -f /var/lock/subsys/httpd ]; then
 		/etc/rc.d/init.d/httpd restart 1>&2
 	fi
