@@ -4,10 +4,11 @@ Summary:	Apache module: On-the-fly compression of HTML documents
 Summary(pl):	Modu³ do apache: kompresuje dokumenty HTML w locie
 Name:		apache-mod_%{mod_name}
 Version:	1.3.26.1a
-Release:	1
+Release:	2
 License:	Apache
 Group:		Networking/Daemons
 Source0:	http://dl.sourceforge.net/mod-gzip/mod_gzip-%{version}.tgz
+Patch0:		mod_%{mod_name}-name_clash.patch
 URL:		http://sourceforge.net/projects/mod-gzip/
 BuildRequires:	%{apxs}
 BuildRequires:	apache(EAPI)-devel
@@ -31,6 +32,7 @@ sposób przezroczysty dekompresuj± i wy¶wietlaj± takie dokumenty.
 
 %prep
 %setup -q -n mod_%{mod_name}-%{version}
+%patch0 -p1
 
 %build
 %{apxs} -Wc,-Wall,-pipe -c mod_%{mod_name}.c mod_%{mod_name}_debug.c mod_%{mod_name}_compress.c -o mod_%{mod_name}.so
