@@ -40,7 +40,7 @@ rm -rf $RPM_BUILD_ROOT
 install -d $RPM_BUILD_ROOT{%{_pkglibdir},%{_sysconfdir}}
 
 install mod_%{mod_name}.so $RPM_BUILD_ROOT%{_pkglibdir}
-install docs/mod_gzip.conf.sample $RPM_BUILD_ROOT%{_sysconfdir}/mod_gzip.conf
+sed -e 's#logs/mod_gzip.log#/var/log/httpd/mod_gzip.log#g' docs/mod_gzip.conf.sample > $RPM_BUILD_ROOT%{_sysconfdir}/mod_gzip.conf
 
 %clean
 rm -rf $RPM_BUILD_ROOT
