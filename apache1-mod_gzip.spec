@@ -24,7 +24,7 @@ Obsoletes:	apache-mod_%{mod_name} <= %{version}
 BuildRoot:	%{tmpdir}/%{name}-%{version}-root-%(id -u -n)
 
 %define		_pkglibdir	%(%{apxs} -q LIBEXECDIR)
-%define         _sysconfdir     /etc/apache
+%define		_sysconfdir	%(%{apxs} -q SYSCONFDIR)
 
 %description
 Apache module: On-the-fly compression of HTML documents. Browser will
