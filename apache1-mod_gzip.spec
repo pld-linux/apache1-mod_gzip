@@ -5,7 +5,7 @@ Summary(pl):	Modu³ do apache: kompresuje dokumenty HTML w locie
 Name:		apache-mod_%{mod_name}
 Version:	1.3.19.1a
 Release:	4
-License:	Apache Software License
+License:	Apache
 Group:		Networking/Daemons
 Source0:	http://www.remotecommunications.com/apache/mod_%{mod_name}/src/%{version}/mod_%{mod_name}.c
 Source1:	http://www.remotecommunications.com/apache/mod_%{mod_name}/src/%{version}/changes.txt
