@@ -28,7 +28,7 @@ transparently decompress and display such documents.
 Modu³ do apache: kompresuje dokumenty HTML w locie. Przegl±darki w
 sposób przezroczysty dekompresuj± i wy¶wietlaj± takie dokumenty.
 
-%prep 
+%prep
 %setup -q -T -c
 cp %{SOURCE0} .
 cp %{SOURCE1} .
