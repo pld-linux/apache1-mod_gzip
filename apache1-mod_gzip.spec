@@ -4,7 +4,7 @@ Summary:	Apache module: On-the-fly compression of HTML documents
 Summary(pl):	Modu³ do apache: kompresuje dokumenty HTML w locie
 Name:		apache-mod_%{mod_name}
 Version:	1.3.19.1a
-Release:	1
+Release:	2
 License:	Apache Software License
 Group:		Networking/Daemons
 Group(cs):	Sí»ové/Démoni
