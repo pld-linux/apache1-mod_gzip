@@ -62,7 +62,7 @@ if [ -f /var/lock/subsys/apache ]; then
 	/etc/rc.d/init.d/apache restart 1>&2
 fi
 
-%preun
+%postun
 if [ "$1" = "0" ]; then
 	if [ -f /var/lock/subsys/apache ]; then
 		/etc/rc.d/init.d/apache restart 1>&2
