@@ -7,15 +7,17 @@ Version:	1.3.19.1a
 Release:	4
 License:	Apache
 Group:		Networking/Daemons
+# working URL: http://www.schroepl.net/_download/mod_gzip-1.3.19.1b.zip
 Source0:	http://www.remotecommunications.com/apache/mod_%{mod_name}/src/%{version}/mod_%{mod_name}.c
 Source1:	http://www.remotecommunications.com/apache/mod_%{mod_name}/src/%{version}/changes.txt
 Source2:	http://www.remotecommunications.com/apache/mod_%{mod_name}/src/%{version}/commands.txt
 Source3:	http://www.remotecommunications.com/apache/mod_%{mod_name}/src/%{version}/samples.txt
 Source4:	%{name}.conf
+URL:		http://www.schroepl.net/projekte/mod_gzip/
 BuildRequires:	%{apxs}
 BuildRequires:	apache(EAPI)-devel
 BuildRequires:	zlib-devel
-Prereq:		%{_sbindir}/apxs
+Requires(post,preun):	%{apxs}
 Requires:	apache(EAPI)
 BuildRoot:	%{tmpdir}/%{name}-%{version}-root-%(id -u -n)
 
@@ -47,6 +49,9 @@ install -d $RPM_BUILD_ROOT{%{_pkglibdir},%{_sysconfdir}}
 install mod_%{mod_name}.so $RPM_BUILD_ROOT%{_pkglibdir}
 install %{SOURCE4} $RPM_BUILD_ROOT%{_sysconfdir}/mod_gzip.conf
 
+%clean
+rm -rf $RPM_BUILD_ROOT
+
 %post
 %{apxs} -e -a -n %{mod_name} %{_pkglibdir}/mod_%{mod_name}.so 1>&2
 if [ -f /etc/httpd/httpd.conf ] && ! grep -q "^Include.*mod_gzip.conf" /etc/httpd/httpd.conf; then
@@ -66,9 +71,6 @@ if [ "$1" = "0" ]; then
 		/etc/rc.d/init.d/httpd restart 1>&2
 	fi
 fi
-
-%clean
-rm -rf $RPM_BUILD_ROOT
 
 %files
 %defattr(644,root,root,755)
