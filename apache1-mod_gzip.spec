@@ -48,7 +48,7 @@ install mod_%{mod_name}.so $RPM_BUILD_ROOT%{_pkglibdir}
 install %{SOURCE4} $RPM_BUILD_ROOT%{_sysconfdir}/mod_gzip.conf
 
 %post
-%{_sbindir}/apxs -e -a -n %{mod_name} %{_pkglibdir}/mod_%{mod_name}.so 1>&2
+%{apxs} -e -a -n %{mod_name} %{_pkglibdir}/mod_%{mod_name}.so 1>&2
 if [ -f /etc/httpd/httpd.conf ] && ! grep -q "^Include.*mod_gzip.conf" /etc/httpd/httpd.conf; then
         echo "Include /etc/httpd/mod_gzip.conf" >> /etc/httpd/httpd.conf
 fi
@@ -58,7 +58,7 @@ fi
 
 %preun
 if [ "$1" = "0" ]; then
-	%{_sbindir}/apxs -e -A -n %{mod_name} %{_pkglibdir}/mod_%{mod_name}.so 1>&2
+	%{apxs} -e -A -n %{mod_name} %{_pkglibdir}/mod_%{mod_name}.so 1>&2
 	grep -v "^Include.*mod_gzip.conf" /etc/httpd/httpd.conf > \
                 /etc/httpd/httpd.conf.tmp
         mv -f /etc/httpd/httpd.conf.tmp /etc/httpd/httpd.conf
