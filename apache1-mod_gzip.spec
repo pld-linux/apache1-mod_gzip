@@ -7,20 +7,6 @@ Version:	1.3.19.1a
 Release:	2
 License:	Apache Software License
 Group:		Networking/Daemons
-Group(cs):	SÌªovÈ/DÈmoni
-Group(da):	NetvÊrks/DÊmoner
-Group(de):	Netzwerkwesen/Server
-Group(es):	Red/Servidores
-Group(fr):	RÈseau/Serveurs
-Group(is):	Net/P˙kar
-Group(it):	Rete/Demoni
-Group(no):	Nettverks/Daemoner
-Group(pl):	Sieciowe/Serwery
-Group(pt):	Rede/Servidores
-Group(ru):	Û≈‘ÿ/‰≈ÕœŒŸ
-Group(sl):	Omreæni/Streæniki
-Group(sv):	N‰tverk/Demoner
-Group(uk):	Ì≈“≈÷¡/‰≈ÕœŒ…
 Source0:	http://www.remotecommunications.com/apache/mod_%{mod_name}/src/%{version}/mod_%{mod_name}.c
 Source1:	http://www.remotecommunications.com/apache/mod_%{mod_name}/src/%{version}/changes.txt
 Source2:	http://www.remotecommunications.com/apache/mod_%{mod_name}/src/%{version}/commands.txt
