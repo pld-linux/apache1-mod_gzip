@@ -68,7 +68,7 @@ fi
 
 %files
 %defattr(644,root,root,755)
-%doc manual/english/*
-%lang(de) %doc manual/deutsch
+%doc docs/manual/english/*
+%lang(de) %doc docs/manual/deutsch
 %attr(755,root,root) %{_pkglibdir}/*
 %attr(640,root,root) %config(noreplace) %verify(not size mtime md5) %{_sysconfdir}/mod_gzip.conf
