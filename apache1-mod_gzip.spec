@@ -12,7 +12,7 @@ Source0:	http://dl.sourceforge.net/mod-gzip/mod_gzip-%{version}.tgz
 Source1:	%{name}.logrotate
 Patch0:		%{name}-name_clash.patch
 Patch1:		%{name}-security.patch
-URL:		http://sourceforge.net/projects/mod-gzip/
+URL:		http://www.schroepl.net/projekte/mod_gzip/
 BuildRequires:	%{apxs}
 BuildRequires:	apache1-devel
 BuildRequires:	zlib-devel
