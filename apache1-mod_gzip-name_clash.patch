@@ -1,0 +1,713 @@
+diff -urN mod_gzip-1.3.26.1a.org/mod_gzip.c mod_gzip-1.3.26.1a/mod_gzip.c
+--- mod_gzip-1.3.26.1a.org/mod_gzip.c	Fri Apr 25 11:52:24 2003
++++ mod_gzip-1.3.26.1a/mod_gzip.c	Fri Apr 25 15:33:54 2003
+@@ -7508,7 +7508,7 @@
+  mod_gzip_printf( "%s: Call gzp_main(r,gzp)...",cn);
+  #endif
+ 
+- rc = gzp_main( r, gzp );
++ rc = mod_gzip_gzp_main( r, gzp );
+ 
+  output_size = (long) gzp->bytes_out;
+ 
+@@ -8100,7 +8100,7 @@
+   mod_gzip_strcpy(gzc.input_filename, r->filename);
+   mod_gzip_strcpy(gzc.output_filename,dest);
+ 
+-  rc = gzp_main(r,&gzc);
++  rc = mod_gzip_gzp_main(r,&gzc);
+ 
+   #ifdef MOD_GZIP_USES_APACHE_LOGS
+   if(gzc.bytes_out > 0) {
+diff -urN mod_gzip-1.3.26.1a.org/mod_gzip.h mod_gzip-1.3.26.1a/mod_gzip.h
+--- mod_gzip-1.3.26.1a.org/mod_gzip.h	Fri Apr 25 11:52:24 2003
++++ mod_gzip-1.3.26.1a/mod_gzip.h	Fri Apr 25 15:32:16 2003
+@@ -354,7 +354,7 @@
+ 
+ } GZP_CONTROL;
+ 
+-int gzp_main(request_rec *, GZP_CONTROL *); 
++int mod_gzip_gzp_main(request_rec *, GZP_CONTROL *); 
+ char *mod_gzip_generate_vary_header(mod_gzip_conf *,struct pool *);
+ int mod_gzip_compress_file(request_rec *,char *);
+ 
+diff -urN mod_gzip-1.3.26.1a.org/mod_gzip_compress.c mod_gzip-1.3.26.1a/mod_gzip_compress.c
+--- mod_gzip-1.3.26.1a.org/mod_gzip_compress.c	Fri Apr 25 11:52:24 2003
++++ mod_gzip-1.3.26.1a/mod_gzip_compress.c	Fri Apr 25 15:31:52 2003
+@@ -678,7 +678,7 @@
+    ush max_chain;
+ } config;
+ 
+-config configuration_table[10] = {
++static config configuration_table[10] = {
+ 
+  {0,    0,  0,    0},  
+  {4,    4,  8,    4},  
+@@ -723,19 +723,19 @@
+   } v;
+ };
+ 
+-uch bl_order[BL_CODES]
++static uch bl_order[BL_CODES]
+    = {16,17,18,0,8,7,9,6,10,5,11,4,12,3,13,2,14,1,15};
+ 
+-int extra_lbits[LENGTH_CODES]
++static int extra_lbits[LENGTH_CODES]
+    = {0,0,0,0,0,0,0,0,1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4,5,5,5,5,0};
+ 
+-int extra_dbits[D_CODES]
++static int extra_dbits[D_CODES]
+    = {0,0,0,0,1,1,2,2,3,3,4,4,5,5,6,6,7,7,8,8,9,9,10,10,11,11,12,12,13,13};
+ 
+-int extra_blbits[BL_CODES]
++static int extra_blbits[BL_CODES]
+    = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,3,7};
+ 
+-ulg crc_32_tab[] = {
++static ulg crc_32_tab[] = {
+   0x00000000L, 0x77073096L, 0xee0e612cL, 0x990951baL, 0x076dc419L,
+   0x706af48fL, 0xe963a535L, 0x9e6495a3L, 0x0edb8832L, 0x79dcb8a4L,
+   0xe0d5e91eL, 0x97d2d988L, 0x09b64c2bL, 0x7eb17cbdL, 0xe7b82d07L,
+@@ -941,7 +941,7 @@
+ 
+ } GZ1;
+ typedef GZ1 *PGZ1;
+-int gz1_size = sizeof( GZ1 );
++static int gz1_size = sizeof( GZ1 );
+ 
+ /* Declare some local function protypes... */
+ 
+@@ -952,118 +952,118 @@
+ /* if the code is being compiled directly into the parent */
+ /* instead of being built as a standalone DLL or DSO library. */
+ 
+-PGZ1  gz1_init        ( void     );
+-int   gz1_cleanup     ( PGZ1 gz1 );
+-ulg   gz1_deflate     ( PGZ1 gz1 );
+-ulg   gz1_deflate_fast( PGZ1 gz1 );
++static PGZ1  gz1_init        ( void     );
++static int   gz1_cleanup     ( PGZ1 gz1 );
++static ulg   gz1_deflate     ( PGZ1 gz1 );
++static ulg   gz1_deflate_fast( PGZ1 gz1 );
+ 
+ /* The rest of the routines should not need the 'gz1_' prefix. */
+ /* No conflicts reported at this time. */
+ 
+-int   inflate        ( PGZ1 gz1 );
+-int   inflate_dynamic( PGZ1 gz1 );
+-int   inflate_stored ( PGZ1 gz1 );
+-int   inflate_fixed  ( PGZ1 gz1 );
+-void  fill_window    ( PGZ1 gz1 );
+-void  flush_outbuf   ( PGZ1 gz1 );
+-void  flush_window   ( PGZ1 gz1 );
+-void  bi_windup      ( PGZ1 gz1 );
+-void  set_file_type  ( PGZ1 gz1 );
+-void  init_block     ( PGZ1 gz1 );
+-int   build_bl_tree  ( PGZ1 gz1 );
+-void  read_error     ( PGZ1 gz1 );
+-void  write_error    ( PGZ1 gz1 );
+-int   get_header     ( PGZ1 gz1, int in );
+-int   inflate_block  ( PGZ1 gz1, int *e );
+-int   fill_inbuf     ( PGZ1 gz1, int eof_ok );
+-char *gz1_basename   ( PGZ1 gz1, char *fname );
+-int   longest_match  ( PGZ1 gz1, unsigned cur_match );
+-void  bi_init        ( PGZ1 gz1, gz1_file_t zipfile );
+-int   file_read      ( PGZ1 gz1, char *buf, unsigned size );
+-void  write_buf      ( PGZ1 gz1, int fd, voidp buf, unsigned cnt );
++static int   inflate        ( PGZ1 gz1 );
++static int   inflate_dynamic( PGZ1 gz1 );
++static int   inflate_stored ( PGZ1 gz1 );
++static int   inflate_fixed  ( PGZ1 gz1 );
++static void  fill_window    ( PGZ1 gz1 );
++static void  flush_outbuf   ( PGZ1 gz1 );
++static void  flush_window   ( PGZ1 gz1 );
++static void  bi_windup      ( PGZ1 gz1 );
++static void  set_file_type  ( PGZ1 gz1 );
++static void  init_block     ( PGZ1 gz1 );
++static int   build_bl_tree  ( PGZ1 gz1 );
++static void  read_error     ( PGZ1 gz1 );
++static void  write_error    ( PGZ1 gz1 );
++static int   get_header     ( PGZ1 gz1, int in );
++static int   inflate_block  ( PGZ1 gz1, int *e );
++static int   fill_inbuf     ( PGZ1 gz1, int eof_ok );
++static char *gz1_basename   ( PGZ1 gz1, char *fname );
++static int   longest_match  ( PGZ1 gz1, unsigned cur_match );
++static void  bi_init        ( PGZ1 gz1, gz1_file_t zipfile );
++static int   file_read      ( PGZ1 gz1, char *buf, unsigned size );
++static void  write_buf      ( PGZ1 gz1, int fd, voidp buf, unsigned cnt );
+ 
+-void  error( char *msg   );
++static void  error( char *msg   );
+ 
+-int zip(
++static int zip(
+ PGZ1 gz1, 
+ int  in,  
+ int  out  
+ );
+ 
+-ulg flush_block(
++static ulg flush_block(
+ PGZ1  gz1,        
+ char *buf,        
+ ulg   stored_len, 
+ int   eof         
+ );
+ 
+-void copy_block(
++static void copy_block(
+ PGZ1      gz1,    
+ char     *buf,    
+ unsigned  len,    
+ int       header  
+ );
+ 
+-int ct_tally(
++static int ct_tally(
+ PGZ1 gz1,  
+ int  dist, 
+ int  lc    
+ );
+ 
+-void send_bits(
++static void send_bits(
+ PGZ1 gz1,   
+ int  value, 
+ int  length 
+ );
+ 
+-void send_tree(
++static void send_tree(
+ PGZ1      gz1,     
+ ct_data  *tree,    
+ int       max_code 
+ );
+ 
+-void send_all_trees(
++static void send_all_trees(
+ PGZ1 gz1,    
+ int  lcodes, 
+ int  dcodes, 
+ int  blcodes 
+ );
+ 
+-void mod_gzip_ct_init(
++static void mod_gzip_ct_init(
+ PGZ1  gz1,    
+ ush  *attr,   
+ int  *methodp 
+ );
+ 
+-void lm_init(
++static void lm_init(
+ PGZ1 gz1,        
+ int  pack_level, 
+ ush *flags       
+ );
+ 
+-void build_tree(
++static void build_tree(
+ PGZ1        gz1, 
+ tree_desc  *desc 
+ );
+ 
+-void compress_block(
++static void compress_block(
+ PGZ1      gz1,   
+ ct_data  *ltree, 
+ ct_data  *dtree  
+ );
+ 
+-void gen_bitlen(
++static void gen_bitlen(
+ PGZ1        gz1, 
+ tree_desc  *desc 
+ );
+ 
+-void pqdownheap(
++static void pqdownheap(
+ PGZ1      gz1,  
+ ct_data  *tree, 
+ int       k     
+ );
+ 
+-int huft_build(
++static int huft_build(
+ PGZ1          gz1, 
+ unsigned     *b,   
+ unsigned      n,   
+@@ -1074,13 +1074,13 @@
+ int          *m    
+ );
+ 
+-ulg updcrc(
++static ulg updcrc(
+ PGZ1      gz1, 
+ uch      *s,   
+ unsigned  n    
+ );
+ 
+-int inflate_codes(
++static int inflate_codes(
+ PGZ1         gz1,  
+ struct huft *tl,   
+ struct huft *td,   
+@@ -1088,30 +1088,30 @@
+ int          bd    
+ );
+ 
+-void gen_codes(
++static void gen_codes(
+ PGZ1      gz1,     
+ ct_data  *tree,    
+ int       max_code 
+ );
+ 
+-void scan_tree(
++static void scan_tree(
+ PGZ1     gz1,     
+ ct_data *tree,    
+ int      max_code 
+ );
+ 
+-unsigned bi_reverse(
++static unsigned bi_reverse(
+ PGZ1     gz1,  
+ unsigned code, 
+ int      len   
+ );
+ 
+-int huft_free(
++static int huft_free(
+ PGZ1         gz1, 
+ struct huft *t    
+ );
+ 
+-PGZ1 gz1_init()
++static PGZ1 gz1_init()
+ {
+  PGZ1 gz1=0; 
+ 
+@@ -1232,7 +1232,7 @@
+ 
+ }
+ 
+-int gz1_cleanup( PGZ1 gz1 )
++static int gz1_cleanup( PGZ1 gz1 )
+ {
+  
+  #ifndef MAXSEG_64K
+@@ -1254,20 +1254,20 @@
+  return 0;
+ }
+ 
+-int (*read_buf)(PGZ1 gz1, char *buf, unsigned size);
++static int (*read_buf)(PGZ1 gz1, char *buf, unsigned size);
+ 
+-void error( char *msg )
++static void error( char *msg )
+ {
+  msg = msg;
+ }
+ 
+-int (*work)( PGZ1 gz1, int infile, int outfile ) = 0; 
++static int (*work)( PGZ1 gz1, int infile, int outfile ) = 0; 
+ 
+ #ifdef __BORLANDC__
+ #pragma argsused
+ #endif
+ 
+-int get_header( PGZ1 gz1, int in )
++static int get_header( PGZ1 gz1, int in )
+ {
+  uch       flags;    
+  char      magic[2]; 
+@@ -1365,7 +1365,7 @@
+  return gz1->method;
+ }
+ 
+-int fill_inbuf( PGZ1 gz1, int eof_ok )
++static int fill_inbuf( PGZ1 gz1, int eof_ok )
+ {
+  int len;
+  int bytes_to_copy;
+@@ -1429,7 +1429,7 @@
+  return gz1->inbuf[0];
+ }
+ 
+-ulg updcrc(
++static ulg updcrc(
+ PGZ1      gz1, 
+ uch      *s,   
+ unsigned  n    
+@@ -1459,12 +1459,12 @@
+  return( c ^ 0xffffffffL ); 
+ }
+ 
+-void read_error( PGZ1 gz1 )
++static void read_error( PGZ1 gz1 )
+ {
+  gz1->abortflag = 1;
+ }
+ 
+-void mod_gzip_strlwr( char *s )
++static void mod_gzip_strlwr( char *s )
+ {
+  char *p1=s;
+ 
+@@ -1481,7 +1481,7 @@
+ #pragma argsused
+ #endif
+ 
+-char *gz1_basename( PGZ1 gz1, char *fname )
++static char *gz1_basename( PGZ1 gz1, char *fname )
+ {
+  char *p;
+  if ((p = strrchr(fname, PATH_SEP))  != NULL) fname = p+1;
+@@ -1498,7 +1498,7 @@
+  return fname;
+ }
+ 
+-void write_buf( PGZ1 gz1, int fd, voidp buf, unsigned cnt )
++static void write_buf( PGZ1 gz1, int fd, voidp buf, unsigned cnt )
+ {
+  unsigned n;
+ 
+@@ -1528,7 +1528,7 @@
+    }
+ }
+ 
+-void write_error( PGZ1 gz1 )
++static void write_error( PGZ1 gz1 )
+ {
+  gz1->abortflag = 1;
+ }
+@@ -1538,7 +1538,7 @@
+ 
+ static ush ptr_offset = 0;
+ 
+-void * fcalloc(
++static void * fcalloc(
+ unsigned items, 
+ unsigned size   
+ )
+@@ -1562,7 +1562,7 @@
+  return buf;
+ }
+ 
+-void fcfree( void *ptr )
++static void fcfree( void *ptr )
+ {
+  *((ush*)&ptr+1) -= (ptr_offset + 15) >> 4;
+  *(ush*)&ptr = ptr_offset;
+@@ -1573,7 +1573,7 @@
+ #endif 
+ #endif 
+ 
+-int zip(
++static int zip(
+ PGZ1 gz1, 
+ int in,   
+ int out   
+@@ -1637,7 +1637,7 @@
+  return OK;
+ }
+ 
+-ulg gz1_deflate( PGZ1 gz1 )
++static ulg gz1_deflate( PGZ1 gz1 )
+ {
+     unsigned hash_head;      
+     unsigned prev_match;     
+@@ -1724,7 +1724,7 @@
+  return 0;
+ }
+ 
+-void flush_outbuf( PGZ1 gz1 )
++static void flush_outbuf( PGZ1 gz1 )
+ {
+  if ( gz1->outcnt == 0 )
+    {
+@@ -1737,7 +1737,7 @@
+  gz1->outcnt = 0;
+ }
+ 
+-void lm_init(
++static void lm_init(
+ PGZ1 gz1,        
+ int  pack_level, 
+ ush *flags       
+@@ -1805,7 +1805,7 @@
+     }
+ }
+ 
+-void fill_window( PGZ1 gz1 )
++static void fill_window( PGZ1 gz1 )
+ {
+  register unsigned n, m;
+ 
+@@ -1856,7 +1856,7 @@
+    }
+ }
+ 
+-ulg gz1_deflate_fast( PGZ1 gz1 )
++static ulg gz1_deflate_fast( PGZ1 gz1 )
+ {
+     unsigned hash_head; 
+     int flush;      
+@@ -1927,7 +1927,7 @@
+  return FLUSH_BLOCK(1);
+ }
+ 
+-void mod_gzip_ct_init(
++static void mod_gzip_ct_init(
+ PGZ1  gz1,    
+ ush  *attr,   
+ int  *methodp 
+@@ -2013,7 +2013,7 @@
+  init_block( gz1 );
+ }
+ 
+-ulg flush_block(
++static ulg flush_block(
+ PGZ1  gz1,        
+ char *buf,        
+ ulg   stored_len, 
+@@ -2117,7 +2117,7 @@
+ #pragma argsused
+ #endif
+ 
+-unsigned bi_reverse(
++static unsigned bi_reverse(
+ PGZ1     gz1,  
+ unsigned code, 
+ int      len   
+@@ -2134,7 +2134,7 @@
+  return res >> 1;
+ }
+ 
+-void set_file_type( PGZ1 gz1 )
++static void set_file_type( PGZ1 gz1 )
+ {
+  int n = 0;
+  unsigned ascii_freq = 0;
+@@ -2147,7 +2147,7 @@
+  *gz1->file_type = bin_freq > (ascii_freq >> 2) ? BINARY : ASCII;
+ }
+ 
+-void init_block( PGZ1 gz1 )
++static void init_block( PGZ1 gz1 )
+ {
+  int n; 
+ 
+@@ -2166,7 +2166,7 @@
+  gz1->flag_bit   = 1;
+ }
+ 
+-void bi_init( PGZ1 gz1, gz1_file_t zipfile )
++static void bi_init( PGZ1 gz1, gz1_file_t zipfile )
+ {
+  gz1->zfile    = zipfile;
+  gz1->bi_buf   = 0;
+@@ -2178,7 +2178,7 @@
+    }
+ }
+ 
+-int ct_tally(
++static int ct_tally(
+ PGZ1 gz1,  
+ int  dist, 
+ int  lc    
+@@ -2231,7 +2231,7 @@
+  return( gz1->last_lit == LIT_BUFSIZE-1 || gz1->last_dist == DIST_BUFSIZE );
+ }
+ 
+-void compress_block(
++static void compress_block(
+ PGZ1     gz1,   
+ ct_data *ltree, 
+ ct_data *dtree  
+@@ -2279,7 +2279,7 @@
+ 
+ #ifndef ASMV
+ 
+-int longest_match( PGZ1 gz1, unsigned cur_match )
++static int longest_match( PGZ1 gz1, unsigned cur_match )
+ {
+  unsigned chain_length = gz1->max_chain_length;   
+  register uch *scan = gz1->window + gz1->strstart;     
+@@ -2363,7 +2363,7 @@
+ }
+ #endif 
+ 
+-void send_bits(
++static void send_bits(
+ PGZ1 gz1,   
+ int  value, 
+ int  length 
+@@ -2385,7 +2385,7 @@
+    }
+ }
+ 
+-void build_tree(
++static void build_tree(
+ PGZ1       gz1, 
+ tree_desc *desc 
+ )
+@@ -2443,7 +2443,7 @@
+     gen_codes(gz1,(ct_data *)tree, max_code);
+ }
+ 
+-int build_bl_tree( PGZ1 gz1 )
++static int build_bl_tree( PGZ1 gz1 )
+ {
+  int max_blindex; 
+ 
+@@ -2462,7 +2462,7 @@
+  return max_blindex;
+ }
+ 
+-void gen_codes(
++static void gen_codes(
+ PGZ1     gz1,     
+ ct_data *tree,    
+ int      max_code 
+@@ -2489,7 +2489,7 @@
+  return;
+ }
+ 
+-void gen_bitlen(
++static void gen_bitlen(
+ PGZ1       gz1, 
+ tree_desc *desc 
+ )
+@@ -2552,7 +2552,7 @@
+   }
+ }
+ 
+-void copy_block(
++static void copy_block(
+ PGZ1      gz1,    
+ char     *buf,    
+ unsigned  len,    
+@@ -2581,7 +2581,7 @@
+    }
+ }
+ 
+-int file_read( PGZ1 gz1, char *buf, unsigned size )
++static int file_read( PGZ1 gz1, char *buf, unsigned size )
+ {
+  unsigned len = 0;
+  unsigned bytes_to_copy = 0;
+@@ -2626,7 +2626,7 @@
+  return (int)len;
+ }
+ 
+-void bi_windup( PGZ1 gz1 )
++static void bi_windup( PGZ1 gz1 )
+ {
+  if ( gz1->bi_valid > 8 )
+    {
+@@ -2641,7 +2641,7 @@
+  gz1->bi_valid = 0;
+ }
+ 
+-void send_all_trees(
++static void send_all_trees(
+ PGZ1 gz1,    
+ int  lcodes, 
+ int  dcodes, 
+@@ -2663,7 +2663,7 @@
+  send_tree(gz1,(ct_data *)gz1->dyn_dtree, dcodes-1); 
+ }
+ 
+-void send_tree(
++static void send_tree(
+ PGZ1     gz1,     
+ ct_data *tree,    
+ int      max_code 
+@@ -2728,7 +2728,7 @@
+     }
+ }
+ 
+-void scan_tree(
++static void scan_tree(
+ PGZ1     gz1,     
+ ct_data *tree,    
+ int      max_code 
+@@ -2794,7 +2794,7 @@
+     }
+ }
+ 
+-void pqdownheap(
++static void pqdownheap(
+ PGZ1     gz1,  
+ ct_data *tree, 
+ int      k     
+@@ -2822,15 +2822,15 @@
+ #define GZS_DEFLATE1  3
+ #define GZS_DEFLATE2  4
+ 
+-int gzs_fsp     ( PGZ1 gz1 ); 
+-int gzs_zip1    ( PGZ1 gz1 ); 
+-int gzs_zip2    ( PGZ1 gz1 ); 
+-int gzs_deflate1( PGZ1 gz1 ); 
+-int gzs_deflate2( PGZ1 gz1 ); 
++static int gzs_fsp     ( PGZ1 gz1 ); 
++static int gzs_zip1    ( PGZ1 gz1 ); 
++static int gzs_zip2    ( PGZ1 gz1 ); 
++static int gzs_deflate1( PGZ1 gz1 ); 
++static int gzs_deflate2( PGZ1 gz1 ); 
+ 
+-int gzp_main( request_rec *r, GZP_CONTROL *gzp )
++int mod_gzip_gzp_main( request_rec *r, GZP_CONTROL *gzp )
+ {
+- char cn[]="gzp_main()";
++ char cn[]="mod_gzip_gzp_main()";
+ 
+  PGZ1 gz1 = 0;
+  int  rc  = 0;
+@@ -2996,7 +2996,7 @@
+  return final_exit_code; 
+ }
+ 
+-int gzs_fsp( PGZ1 gz1 )
++static int gzs_fsp( PGZ1 gz1 )
+ {
+  int rc=0; 
+ 
+@@ -3036,7 +3036,7 @@
+  return( rc );
+ }
+ 
+-int gzs_zip1( PGZ1 gz1 )
++static int gzs_zip1( PGZ1 gz1 )
+ {
+  uch  flags = 0;         
+ 
+@@ -3070,7 +3070,7 @@
+  return 0;
+ }
+ 
+-int gzs_zip2( PGZ1 gz1 )
++static int gzs_zip2( PGZ1 gz1 )
+ {
+  #ifdef FUTURE_USE
+  uch  flags = 0;
+@@ -3103,7 +3103,7 @@
+  return 0;
+ }
+ 
+-int gzs_deflate1( PGZ1 gz1 )
++static int gzs_deflate1( PGZ1 gz1 )
+ {
+  if ( !gz1->deflate1_initialized )
+    {
+@@ -3219,7 +3219,7 @@
+  return 0;
+ }
+ 
+-int gzs_deflate2( PGZ1 gz1 )
++static int gzs_deflate2( PGZ1 gz1 )
+ {
+  #if !defined(NO_SIZE_CHECK) && !defined(RECORD_IO)
+  if (gz1->ifile_size != -1L && gz1->isize != (ulg)gz1->ifile_size)
