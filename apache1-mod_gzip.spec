@@ -8,6 +8,7 @@ Release:	2
 License:	Apache
 Group:		Networking/Daemons
 Source0:	http://dl.sourceforge.net/mod-gzip/mod_gzip-%{version}.tgz
+Source1:	mod_%{mod_name}.logrotate
 Patch0:		mod_%{mod_name}-name_clash.patch
 URL:		http://sourceforge.net/projects/mod-gzip/
 BuildRequires:	%{apxs}
@@ -39,10 +40,12 @@ sposób przezroczysty dekompresuj± i wy¶wietlaj± takie dokumenty.
 
 %install
 rm -rf $RPM_BUILD_ROOT
-install -d $RPM_BUILD_ROOT{%{_pkglibdir},%{_sysconfdir}}
+install -d $RPM_BUILD_ROOT{%{_pkglibdir},%{_sysconfdir},/etc/logrotate.d}
 
 install mod_%{mod_name}.so $RPM_BUILD_ROOT%{_pkglibdir}
 sed -e 's#logs/mod_gzip.log#/var/log/httpd/mod_gzip.log#g' docs/mod_gzip.conf.sample > $RPM_BUILD_ROOT%{_sysconfdir}/mod_gzip.conf
+
+install %{SOURCE1} $RPM_BUILD_ROOT/etc/logrotate.d/%{name}
 
 %clean
 rm -rf $RPM_BUILD_ROOT
@@ -74,3 +77,4 @@ fi
 %lang(de) %doc docs/manual/deutsch
 %attr(755,root,root) %{_pkglibdir}/*
 %attr(640,root,root) %config(noreplace) %verify(not size mtime md5) %{_sysconfdir}/mod_gzip.conf
+%attr(640,root,root) %config(noreplace) /etc/logrotate.d/*
