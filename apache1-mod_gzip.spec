@@ -11,6 +11,7 @@ Source0:	http://dl.sourceforge.net/mod-gzip/mod_gzip-%{version}.tgz
 # Source0-md5:	080ccc5d789ed5efa0c0a7625e4fa02d
 Source1:	mod_%{mod_name}.logrotate
 Patch0:		mod_%{mod_name}-name_clash.patch
+Patch1:		mod_%{mod_name}-security.patch
 URL:		http://sourceforge.net/projects/mod-gzip/
 BuildRequires:	%{apxs}
 BuildRequires:	apache(EAPI)-devel
@@ -35,6 +36,7 @@ sposób przezroczysty dekompresuj± i wy¶wietlaj± takie dokumenty.
 %prep
 %setup -q -n mod_%{mod_name}-%{version}
 %patch0 -p1
+%patch1 -p1
 
 %build
 %{apxs} -Wc,-Wall,-pipe -c mod_%{mod_name}.c mod_%{mod_name}_debug.c mod_%{mod_name}_compress.c -o mod_%{mod_name}.so
