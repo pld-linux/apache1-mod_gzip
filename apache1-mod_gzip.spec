@@ -4,7 +4,7 @@ Summary:	Apache module: On-the-fly compression of HTML documents
 Summary(pl):	Modu³ do apache: kompresuje dokumenty HTML w locie
 Name:		apache1-mod_%{mod_name}
 Version:	1.3.26.1a
-Release:	1.5
+Release:	2
 License:	Apache
 Group:		Networking/Daemons
 Source0:	http://dl.sourceforge.net/mod-gzip/mod_gzip-%{version}.tgz
