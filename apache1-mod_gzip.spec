@@ -81,4 +81,4 @@ fi
 %lang(de) %doc docs/manual/deutsch
 %attr(755,root,root) %{_pkglibdir}/*
 %attr(640,root,root) %config(noreplace) %verify(not size mtime md5) %{_sysconfdir}/mod_gzip.conf
-%attr(640,root,root) %config(noreplace) /etc/logrotate.d/*
+%attr(640,root,root) %config(noreplace) %verify(not size mtime md5) /etc/logrotate.d/*
