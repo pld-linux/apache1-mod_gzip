@@ -18,6 +18,8 @@ BuildRequires:	%{apxs}
 BuildRequires:	apache(EAPI)-devel
 BuildRequires:	zlib-devel
 Requires(post,preun):	%{apxs}
+Requires(post,preun):	grep
+Requires(preun):	fileutils
 Requires:	apache(EAPI)
 BuildRoot:	%{tmpdir}/%{name}-%{version}-root-%(id -u -n)
 
@@ -64,6 +66,7 @@ fi
 %preun
 if [ "$1" = "0" ]; then
 	%{apxs} -e -A -n %{mod_name} %{_pkglibdir}/mod_%{mod_name}.so 1>&2
+	umask 027
 	grep -v "^Include.*mod_gzip.conf" /etc/httpd/httpd.conf > \
                 /etc/httpd/httpd.conf.tmp
         mv -f /etc/httpd/httpd.conf.tmp /etc/httpd/httpd.conf
