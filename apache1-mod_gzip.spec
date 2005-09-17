@@ -70,7 +70,7 @@ if [ "$1" = "0" ]; then
 fi
 
 %triggerpostun -- %{name} < 1.3.26.1a-1.1
-if grep -q '^Include conf\.d' /etc/apache/apache.conf; then
+if grep -q '^Include conf\.d/\*\.conf' /etc/apache/apache.conf; then
 	%{apxs} -e -A -n %{mod_name} %{_pkglibdir}/mod_%{mod_name}.so 1>&2
 	sed -i -e '
 		/^Include.*mod_%{mod_name}\.conf/d
