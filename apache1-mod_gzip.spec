@@ -22,7 +22,7 @@ Requires(triggerpostun):	%{apxs}
 Requires(triggerpostun):	grep
 Requires(triggerpostun):	sed >= 4.0
 Requires:	apache1 >= 1.3.33-2
-Obsoletes:	apache-mod_gzip <= %{version}
+Obsoletes:	apache-mod_gzip <= 1.3.26.1a
 BuildRoot:	%{tmpdir}/%{name}-%{version}-root-%(id -u -n)
 
 %define		_pkglibdir	%(%{apxs} -q LIBEXECDIR 2>/dev/null)
