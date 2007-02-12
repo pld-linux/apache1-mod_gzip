@@ -1,7 +1,7 @@
 %define		mod_name	gzip
 %define 	apxs		/usr/sbin/apxs1
 Summary:	Apache module: On-the-fly compression of HTML documents
-Summary(pl.UTF-8):   Moduł do apache: kompresuje dokumenty HTML w locie
+Summary(pl.UTF-8):	Moduł do apache: kompresuje dokumenty HTML w locie
 Name:		apache1-mod_%{mod_name}
 Version:	1.3.26.1a
 Release:	3
