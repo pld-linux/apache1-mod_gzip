@@ -14,8 +14,7 @@ Source2:	%{name}.logrotate
 Patch0:		%{name}-name_clash.patch
 Patch1:		%{name}-security.patch
 URL:		http://www.schroepl.net/projekte/mod_gzip/
-BuildRequires:	apache1-apxs
-BuildRequires:	apache1-devel >= 1.3.33-2
+BuildRequires:	apache1-devel >= 1.3.39
 BuildRequires:	rpmbuild(macros) >= 1.268
 BuildRequires:	zlib-devel
 Requires(triggerpostun):	%{apxs}
