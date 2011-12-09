@@ -26,7 +26,7 @@ Conflicts:	logrotate < 3.7-4
 BuildRoot:	%{tmpdir}/%{name}-%{version}-root-%(id -u -n)
 
 %define		_pkglibdir	%(%{apxs} -q LIBEXECDIR 2>/dev/null)
-%define		_sysconfdir	%(%{apxs} -q SYSCONFDIR 2>/dev/null)
+%define		_sysconfdir	%(%{apxs} -q SYSCONFDIR 2>/dev/null)/conf.d
 %define		_pkglogdir	%(%{apxs} -q PREFIX 2>/dev/null)/logs
 
 %description
@@ -47,10 +47,10 @@ sposób przezroczysty dekompresują i wyświetlają takie dokumenty.
 
 %install
 rm -rf $RPM_BUILD_ROOT
-install -d $RPM_BUILD_ROOT{%{_pkglibdir},%{_sysconfdir}/conf.d,/etc/logrotate.d,%{_pkglogdir}}
+install -d $RPM_BUILD_ROOT{%{_pkglibdir},%{_sysconfdir},/etc/logrotate.d,%{_pkglogdir}}
 
 install mod_%{mod_name}.so $RPM_BUILD_ROOT%{_pkglibdir}
-install %{SOURCE1} $RPM_BUILD_ROOT%{_sysconfdir}/conf.d/90_mod_%{mod_name}.conf
+install %{SOURCE1} $RPM_BUILD_ROOT%{_sysconfdir}/90_mod_%{mod_name}.conf
 install %{SOURCE2} $RPM_BUILD_ROOT/etc/logrotate.d/%{name}
 
 > $RPM_BUILD_ROOT%{_pkglogdir}/mod_gzip.log
@@ -75,7 +75,7 @@ if grep -q '^Include conf\.d/\*\.conf' /etc/apache/apache.conf; then
 else
 	# they're still using old apache.conf
 	sed -i -e '
-		s,^Include.*mod_%{mod_name}\.conf,Include %{_sysconfdir}/conf.d/*_mod_%{mod_name}.conf,
+		s,^Include.*mod_%{mod_name}\.conf,Include %{_sysconfdir}/*_mod_%{mod_name}.conf,
 	' /etc/apache/apache.conf
 fi
 %service -q apache restart
@@ -85,6 +85,6 @@ fi
 %doc docs/manual/english/*
 %lang(de) %doc docs/manual/deutsch
 %attr(755,root,root) %{_pkglibdir}/*
-%attr(640,root,root) %config(noreplace) %verify(not md5 mtime size) %{_sysconfdir}/conf.d/*_mod_%{mod_name}.conf
+%attr(640,root,root) %config(noreplace) %verify(not md5 mtime size) %{_sysconfdir}/*_mod_%{mod_name}.conf
 %attr(640,root,root) %config(noreplace) %verify(not md5 mtime size) /etc/logrotate.d/*
 %attr(640,root,root) %ghost %{_pkglogdir}/*
