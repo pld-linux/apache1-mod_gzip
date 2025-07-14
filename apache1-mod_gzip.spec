@@ -39,8 +39,8 @@ sposób przezroczysty dekompresują i wyświetlają takie dokumenty.
 
 %prep
 %setup -q -n mod_%{mod_name}-%{version}
-%patch0 -p1
-%patch1 -p1
+%patch -P0 -p1
+%patch -P1 -p1
 
 %build
 %{apxs} -Wc,-Wall,-pipe -c mod_%{mod_name}.c mod_%{mod_name}_debug.c mod_%{mod_name}_compress.c -o mod_%{mod_name}.so
